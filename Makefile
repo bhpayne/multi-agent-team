@@ -22,17 +22,25 @@ DOCKER_OR_PODMAN=docker
 container_build:
 	$(DOCKER_OR_PODMAN) build -t $(ISOLATION_IMAGE):$(CONTAINER_TAG) .
 
+# don't include
+#                 -v `pwd`:/scratch -w /scratch/ \
+# unless agents should have access to host
+# 
+# The host mapping
+#                 --add-host=host.docker.internal:host-gateway \
+# is for linux; not needed on Mac
 container_live_user:
 	$(DOCKER_OR_PODMAN) run -it --rm \
-                -v `pwd`:/scratch -w /scratch/ \
                 --publish 8000:8000 \
+                --add-host=host.docker.internal:host-gateway \
                 --user $$(id -u):$$(id -g) \
                 $(ISOLATION_IMAGE):$(CONTAINER_TAG) /bin/bash
 
 container_live_root:
 	$(DOCKER_OR_PODMAN) run -it --rm \
-                -v `pwd`:/scratch -w /scratch/ \
                 --publish 8000:8000 \
+                -v `pwd`:/scratch -w /scratch/ \
+                --add-host=host.docker.internal:host-gateway \
                 $(ISOLATION_IMAGE):$(CONTAINER_TAG) /bin/bash
 
 # assumes the webserver is already running
