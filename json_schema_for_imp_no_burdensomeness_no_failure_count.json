@@ -1,9 +1,9 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Generated Schema",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "IMP no failure count",
   "type": "object",
   "properties": {
-    "nodes": {
+    "tasks": {
       "type": "array",
       "items": {
         "type": "object",
@@ -49,15 +49,20 @@
         ]
       }
     },
-    "edges": {
+    "dependencies": {
       "type": "array",
       "items": {
-        "type": "object"
+        "type": "object",
+        "minProperties": 1,
+        "maxProperties": 1,
+        "additionalProperties": {
+          "type": "string"
+        }
       }
     }
   },
   "required": [
-    "nodes",
-    "edges"
+    "tasks",
+    "dependencies"
   ]
 }
