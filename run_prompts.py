@@ -22,6 +22,25 @@ def is_valid_json(text: str) -> bool:
         return False
 
 
+def save_token_count_to_file(prompt_summary: str, usage: dict) -> None:
+    """
+    "usage": {
+        "prompt_tokens": 932,
+        "completion_tokens": 1116,
+        "total_tokens": 2048
+    }
+    """
+    with open("/opt/git_for_agents/token_usage.log", "a") as file_handle:
+        file_handle.write("prompt: " + prompt_summary + "\n")
+        file_handle.write("prompt tokens: " + str(usage["prompt_tokens"]) + "\n")
+        file_handle.write(
+            "completion tokens: " + str(usage["completion_tokens"]) + "\n"
+        )
+        file_handle.write("total tokens: " + str(usage["total_tokens"]) + "\n")
+
+
+max_token_count = 16384
+
 repo = Repo("/opt/git_for_agents")
 
 
@@ -104,6 +123,17 @@ You are only allowed to execute the following commands. Break complex tasks into
 ```
 """
 
+
+start_time = time.time()
+
+############################## brainstorming tasks based on user's request ######
+
+elapsed_time = round(time.time() - start_time, 3)
+print(f"reading user's request;  {elapsed_time} seconds")
+
+with open("git_for_agents/users_request.md", "r") as file_handle:
+    users_request = file_handle.read()
+
 system_prompt_for_brainstorming = """
 Given the user's request below, brainstorm tasks that would be relevant for decomposing the request.
 
@@ -111,6 +141,41 @@ Given the user's request below, brainstorm tasks that would be relevant for deco
 User's request:
 """
 
+
+data = {
+    "messages": [
+        {"role": "user", "content": system_prompt_for_brainstorming + users_request}
+    ],
+    "max_tokens": 16384,
+}
+brainstorming_response = requests.post(url, headers=headers, json=data)
+
+save_token_count_to_file("brainstorming", brainstorming_response.json()["usage"])
+
+# If it says "length", it means it hit your max_tokens limit.
+# If it says "stop", the model finished generating naturally.
+if brainstorming_response.json()["choices"][0]["finish_reason"] == "length":
+    print("ERROR: max token count constrained the output")
+
+
+print(json.dumps(brainstorming_response.json(), indent=4))
+
+brainstorming_tasks_md = brainstorming_response.json()["choices"][0]["message"][
+    "content"
+]
+
+with open("git_for_agents/brainstorming_tasks.md", "w") as file_handle:
+    file_handle.write(brainstorming_tasks_md)
+
+git_add_commit("brainstorming_tasks.md", "brainstorming tasks")
+
+elapsed_time = round(time.time() - start_time, 3)
+print(f"committed brainstorming to git;  {elapsed_time} seconds")
+
+############################## decorate brainstormed tasks with inputs and outputs ############
+
+with open("git_for_agents/brainstorming_tasks.md", "r") as file_handle:
+    brainstorming_tasks_md = file_handle.read()
 
 system_prompt_for_decoration_of_tasks = """
 A few tasks described below have been identified in a brainstorming session. 
@@ -121,6 +186,43 @@ Lastly, for each task, estimate how burdensome this task is. Could this be accom
 Tasks:
 """
 
+
+data = {
+    "messages": [
+        {
+            "role": "user",
+            "content": system_prompt_for_decoration_of_tasks + brainstorming_tasks_md,
+        }
+    ],
+    "max_tokens": 16384,
+}
+decorated_response = requests.post(url, headers=headers, json=data)
+
+save_token_count_to_file("decoration of tasks", decorated_response.json()["usage"])
+
+# If it says "length", it means it hit your max_tokens limit.
+# If it says "stop", the model finished generating naturally.
+if decorated_response.json()["choices"][0]["finish_reason"] == "length":
+    print("ERROR: max token count constrained the output")
+
+
+print(json.dumps(decorated_response.json(), indent=4))
+
+decorated_tasks_md = decorated_response.json()["choices"][0]["message"]["content"]
+
+with open("git_for_agents/decorated_tasks.md", "w") as file_handle:
+    file_handle.write(decorated_tasks_md)
+
+git_add_commit("decorated_tasks.md", "brainstorming tasks")
+
+elapsed_time = round(time.time() - start_time, 3)
+print(f"committed decorated tasks to git;  {elapsed_time} seconds")
+
+
+############################## convert decorated tasks into IMP-as-JSON ############
+
+with open("git_for_agents/decorated_tasks.md", "r") as file_handle:
+    decorated_tasks_md = file_handle.read()
 
 with open(
     "json_schema_for_imp_no_burdensomeness_no_failure_count.json", "r"
@@ -144,70 +246,10 @@ The JSON file must adhere to the schema below.
 {json_schema_for_imp_no_burdensomeness_no_failure_count}
 ```
 
+Do not include markdown code blocks (like ```json), conversational filler, or explanations. 
+
 Tasks:
 """
-
-start_time = time.time()
-
-############################## brainstorming tasks based on user's request ######
-
-elapsed_time = round(time.time() - start_time, 3)
-print(f"reading user's request;  {elapsed_time} seconds")
-
-with open("git_for_agents/users_request.md", "r") as file_handle:
-    users_request = file_handle.read()
-
-data = {
-    "messages": [
-        {"role": "user", "content": system_prompt_for_brainstorming + users_request}
-    ]
-}
-brainstorming_response = requests.post(url, headers=headers, json=data)
-
-# print(json.dumps(brainstorming_response.json(), indent=4))
-
-brainstorming_tasks_md = brainstorming_response.json()["choices"][0]["message"][
-    "content"
-]
-
-with open("git_for_agents/brainstorming_tasks.md", "w") as file_handle:
-    file_handle.write(brainstorming_tasks_md)
-
-git_add_commit("brainstorming_tasks.md", "brainstorming tasks")
-
-elapsed_time = round(time.time() - start_time, 3)
-print(f"committed brainstorming to git;  {elapsed_time} seconds")
-
-############################## decorate brainstormed tasks with inputs and outputs ############
-
-with open("git_for_agents/brainstorming_tasks.md", "r") as file_handle:
-    brainstorming_tasks_md = file_handle.read()
-
-data = {
-    "messages": [
-        {
-            "role": "user",
-            "content": system_prompt_for_decoration_of_tasks + brainstorming_tasks_md,
-        }
-    ]
-}
-decorated_response = requests.post(url, headers=headers, json=data)
-
-decorated_tasks_md = decorated_response.json()["choices"][0]["message"]["content"]
-
-with open("git_for_agents/decorated_tasks.md", "w") as file_handle:
-    file_handle.write(decorated_tasks_md)
-
-git_add_commit("decorated_tasks.md", "brainstorming tasks")
-
-elapsed_time = round(time.time() - start_time, 3)
-print(f"committed decorated tasks to git;  {elapsed_time} seconds")
-
-
-############################## convert decorated tasks into IMP-as-JSON ############
-
-with open("git_for_agents/decorated_tasks.md", "r") as file_handle:
-    decorated_tasks_md = file_handle.read()
 
 
 data = {
@@ -216,14 +258,28 @@ data = {
             "role": "user",
             "content": system_prompt_for_create_IMP + decorated_tasks_md,
         }
-    ]
+    ],
+    "response_format": {"type": "json_object"},
+    "temperature": 0.2,  # Lower temperature reduces creativity and formatting mistakes
+    "max_tokens": 16384,
 }
 imp_response = requests.post(url, headers=headers, json=data)
+
+save_token_count_to_file("IMP from decorated tasks", imp_response.json()["usage"])
+
+
+# If it says "length", it means it hit your max_tokens limit.
+# If it says "stop", the model finished generating naturally.
+if imp_response.json()["choices"][0]["finish_reason"] == "length":
+    print("ERROR: max token count constrained the output")
 
 
 # print(json.dumps(imp_response.json(), indent=4))
 
 imp_as_json = imp_response.json()["choices"][0]["message"]["content"]
+
+print("IMP as JSON:")
+print(imp_as_json)
 
 with open(
     "git_for_agents/imp_no_burdensomeness_no_failure_count.json", "w"
@@ -248,7 +304,7 @@ json_is_valid = None
 json_is_valid = is_valid_json(imp_as_json)
 
 if not json_is_valid:
-    print("LLM did not produce valid JSON; try again")
+    print("ERROR: LLM did not produce valid JSON; try again")
 
 try:
     jsonschema_validate(
