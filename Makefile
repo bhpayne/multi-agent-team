@@ -18,6 +18,7 @@ CONTAINER_TAG=latest-$(this_arch)
 
 DOCKER_OR_PODMAN=docker
 
+container: container_build container_live_root
 
 container_build:
 	$(DOCKER_OR_PODMAN) build -t $(ISOLATION_IMAGE):$(CONTAINER_TAG) .
@@ -37,9 +38,9 @@ container_live_user:
                 $(ISOLATION_IMAGE):$(CONTAINER_TAG) /bin/bash
 
 container_live_root:
+	$(DOCKER_OR_PODMAN) run -v `pwd`:/scratch -w /scratch/ $(ISOLATION_IMAGE):$(CONTAINER_TAG) black /scratch/run_prompts.py
 	$(DOCKER_OR_PODMAN) run -it --rm \
                 --publish 8000:8000 \
-                -v `pwd`:/scratch -w /scratch/ \
                 --add-host=host.docker.internal:host-gateway \
                 $(ISOLATION_IMAGE):$(CONTAINER_TAG) /bin/bash
 
@@ -48,3 +49,5 @@ container_shell:
 	$(DOCKER_OR_PODMAN) exec -it $$(docker ps -qf "name=phusion") /bin/bash
 
 
+run_script:
+	docker run --rm -w /opt --publish 8000:8000 phusion-jammy:latest-arm64 python3 /opt/run_prompts.py

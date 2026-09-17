@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Generated Schema",
+  "type": "object",
+  "properties": {
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "task description": {
+            "type": "string"
+          },
+          "inputs needed for task": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "assumptions about the task": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "constraints on the task": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expected outputs from the task": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "task description",
+          "inputs needed for task",
+          "assumptions about the task",
+          "constraints on the task",
+          "expected outputs from the task"
+        ]
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "required": [
+    "nodes",
+    "edges"
+  ]
+}
