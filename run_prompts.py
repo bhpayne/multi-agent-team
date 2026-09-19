@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import requests
 import json
 from git import Repo
@@ -169,7 +170,7 @@ orchestration_elapsed_time = round(time.time() - orchestration_start_time, 3)
 print(f"reading user's request;  {orchestration_elapsed_time} seconds")
 
 
-with open("git_for_agents/users_request.md", "r") as file_handle:
+with open("/opt/git_for_agents/users_request.md", "r") as file_handle:
     users_request = file_handle.read()
 
 system_prompt_for_brainstorming = f"""
@@ -183,7 +184,10 @@ User's request:
 
 
 with open(
-    "/opt/git_for_agents/prompt_for_" + stage_description + ".md", "w"
+    "/opt/git_for_agents/logging_of_prompts_and_results/prompt_for_"
+    + stage_description
+    + ".md",
+    "w",
 ) as file_handle:
     file_handle.write(system_prompt_for_brainstorming)
 
@@ -196,12 +200,15 @@ brainstorming_response = requests.post(url, headers=headers, json=data)
 prompt_duration = round(time.time() - prompt_elapsed_time, 1)
 
 with open(
-    "/opt/git_for_agents/result_from_" + stage_description + ".json", "w"
+    "/opt/git_for_agents/logging_of_prompts_and_results/result_from_"
+    + stage_description
+    + ".json",
+    "w",
 ) as file_handle:
-    file_handle.write(json.dumps(brainstorming_response.json(), indent=4))
+    json.dump(brainstorming_response.json(), file_handle, indent=2)
 
-#print("keys:")
-#print(brainstorming_response.json().keys())
+# print("keys:")
+# print(brainstorming_response.json().keys())
 
 save_token_count_to_file(
     stage_description, brainstorming_response.json()["usage"], prompt_duration
@@ -248,7 +255,10 @@ Tasks:
 """
 
 with open(
-    "/opt/git_for_agents/prompt_for_" + stage_description + ".md", "w"
+    "/opt/git_for_agents/logging_of_prompts_and_results/prompt_for_"
+    + stage_description
+    + ".md",
+    "w",
 ) as file_handle:
     file_handle.write(system_prompt_for_decoration_of_tasks)
 
@@ -266,9 +276,12 @@ decorated_response = requests.post(url, headers=headers, json=data)
 prompt_duration = round(time.time() - prompt_elapsed_time, 1)
 
 with open(
-    "/opt/git_for_agents/result_from_" + stage_description + ".json", "w"
+    "/opt/git_for_agents/logging_of_prompts_and_results/result_from_"
+    + stage_description
+    + ".json",
+    "w",
 ) as file_handle:
-    file_handle.write(json.dumps(decorated_response.json(), indent=2))
+    json.dump(decorated_response.json(), file_handle, indent=2)
 
 try:
     save_token_count_to_file(
@@ -335,11 +348,17 @@ Tasks:
 """
 
 with open(
-    "/opt/git_for_agents/prompt_for_" + stage_description + ".md", "w"
+    "/opt/git_for_agents/logging_of_prompts_and_results/prompt_for_"
+    + stage_description
+    + ".md",
+    "w",
 ) as file_handle:
     file_handle.write(system_prompt_for_create_IMP)
 
-git_add_commit("prompt_for_" + stage_description + ".md", stage_description)
+git_add_commit(
+    "logging_of_prompts_and_results/prompt_for_" + stage_description + ".md",
+    stage_description,
+)
 
 data = {
     "messages": [
@@ -357,9 +376,12 @@ imp_response = requests.post(url, headers=headers, json=data)
 prompt_duration = round(time.time() - prompt_elapsed_time, 1)
 
 with open(
-    "/opt/git_for_agents/result_from_" + stage_description + ".json", "w"
+    "/opt/git_for_agents/logging_of_prompts_and_results/result_from_"
+    + stage_description
+    + ".json",
+    "w",
 ) as file_handle:
-    file_handle.write(json.dumps(imp_response.json(), indent=2))
+    json.dump(imp_response.json(), file_handle, indent=2)
 
 # print(json.dumps(imp_response.json(), indent=4))
 
@@ -459,7 +481,10 @@ Do not include markdown code blocks, conversational filler, or explanations.
     """
 
     with open(
-        "/opt/git_for_agents/prompt_for_" + stage_description + ".md", "w"
+        "/opt/git_for_agents/logging_of_prompts_and_results/prompt_for_"
+        + stage_description
+        + ".md",
+        "w",
     ) as file_handle:
         file_handle.write(system_prompt_for_IMP_to_graphviz)
 
@@ -478,9 +503,12 @@ Do not include markdown code blocks, conversational filler, or explanations.
     # print(json.dumps(imp_graphviz_response.json(), indent=4))
 
     with open(
-        "/opt/git_for_agents/result_from_" + stage_description + ".json", "w"
+        "/opt/git_for_agents/logging_of_prompts_and_results/result_from_"
+        + stage_description
+        + ".json",
+        "w",
     ) as file_handle:
-        file_handle.write(json.dumps(imp_graphviz_response.json(), indent=2))
+        json.dump(imp_graphviz_response.json(), file_handle, indent=2)
 
     save_token_count_to_file(
         stage_description, imp_graphviz_response.json()["usage"], prompt_duration
@@ -535,7 +563,7 @@ Here's the task to assess:
     """
 
     with open(
-        "/opt/git_for_agents/prompt_for_"
+        "/opt/git_for_agents/logging_of_prompts_and_results/prompt_for_"
         + stage_description
         + "_"
         + str(task_index)
@@ -560,14 +588,14 @@ Here's the task to assess:
     # print(json.dumps(burdensomeness.json(), indent=4))
 
     with open(
-        "/opt/git_for_agents/result_from_"
+        "/opt/git_for_agents/logging_of_prompts_and_results/result_from_"
         + stage_description
         + "_"
         + str(task_index)
         + ".json",
         "w",
     ) as file_handle:
-        file_handle.write(json.dumps(burdensomeness_response.json(), indent=2))
+        json.dump(burdensomeness_response.json(), file_handle, indent=2)
 
     save_token_count_to_file(
         "IMP task burdensomeness " + str(task_index),
@@ -605,7 +633,7 @@ Here's the task to assess:
     imp_no_burdensomeness["tasks"][task_index]["failure counter"] = 0
 
 with open("/opt/git_for_agents/imp.json", "w") as file_handle:
-    json.dump(imp_no_burdensomeness, file_handle)
+    json.dump(imp_no_burdensomeness, file_handle, indent=2)
 
 git_add_commit(
     "imp.json",
@@ -613,3 +641,28 @@ git_add_commit(
 )
 
 print_duration(orchestration_start_time, stage_start_time, stage_description)
+
+
+################################### create folders per task
+
+stage_start_time = time.time()
+
+stage_description = "write task into folder"
+
+
+with open("/opt/git_for_agents/imp.json", "r") as file_handle:
+    imp_as_json = json.load(file_handle)
+
+for entry in imp_as_json["tasks"]:
+    folder_name = entry["id"] + "_" + entry["task description"]
+
+    full_path = "/opt/git_for_agents/tasks/" + folder_name
+    os.mkdir(full_path)
+
+    with open(full_path + "/task_description.json", "w") as file_handle:
+        json.dump(imp_as_json, file_handle, indent=2)
+
+
+print_duration(orchestration_start_time, stage_start_time, stage_description)
+
+###################################
