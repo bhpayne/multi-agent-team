@@ -26,6 +26,9 @@ RUN git init -b main && \
     git config --global user.email "agents@website.com" && \
     git config --global user.name "TeamOf Agents"
 
+RUN mkdir /opt/git_for_agents/logging_of_prompts_and_results && \
+    mkdir /opt/git_for_agents/tasks 
+
 RUN echo "This repository is for the Integrated Master Plan, documentation, generated source code, and other artifacts relevant for coordination with coworkers." > /opt/git_for_agents/README.md
 
 RUN git add README.md && git commit -m "initialized with README"
